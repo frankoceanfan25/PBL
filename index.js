@@ -107,7 +107,6 @@ app.post('/signup', async (req, res) => {
 });
 
 // ✅ REGISTER FOR EVENT
-// This is only the registration endpoint update - keep the rest of your server code the same
 app.post('/register', async (req, res) => {
   try {
     const { user_id, event_id } = req.body;
@@ -165,12 +164,14 @@ app.get('/events', async (req, res) => {
       SELECT events.*, clubs.name AS club, clubs.logo_url AS clubLogo
       FROM events
       LEFT JOIN clubs ON events.club_id = clubs.id
+      ORDER BY events.date ASC
     `);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Error fetching events", details: err.message });
   }
 });
+
 // Check if this route is working properly
 app.get('/user-events/:userId', async (req, res) => {
   try {
@@ -196,6 +197,7 @@ app.get('/user-events/:userId', async (req, res) => {
     res.status(500).json({ error: "Failed to fetch user events" });
   }
 });
+
 // ✅ FETCH CLUBS
 app.get('/clubs', async (req, res) => {
   try {
@@ -204,6 +206,66 @@ app.get('/clubs', async (req, res) => {
   } catch (error) {
     console.error("Error fetching clubs:", error);
     res.status(500).json({ error: "Failed to fetch clubs" });
+  }
+});
+
+// Improved search endpoint with better error handling and logging
+app.get('/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    console.log(`Processing search request for: "${query}"`);
+    
+    if (!query || query.trim() === '') {
+      console.log("Empty search query received, returning empty results");
+      return res.json({
+        events: [],
+        clubs: []
+      });
+    }
+    
+    const searchTerm = `%${query.trim()}%`;
+    
+    // Search events with improved query - fixed the JOIN syntax
+    const [events] = await pool.query(`
+      SELECT events.*, clubs.name AS club, clubs.logo_url AS clubLogo
+      FROM events
+      LEFT JOIN clubs ON events.club_id = clubs.id
+      WHERE events.title LIKE ? 
+      OR events.description LIKE ? 
+      OR events.venue LIKE ?
+      OR clubs.name LIKE ?
+      ORDER BY events.date ASC
+    `, [searchTerm, searchTerm, searchTerm, searchTerm]);
+    
+    // Search clubs
+    const [clubs] = await pool.query(`
+      SELECT * FROM clubs
+      WHERE name LIKE ?
+      OR description LIKE ?
+      ORDER BY name ASC
+    `, [searchTerm, searchTerm]);
+    
+    console.log(`Search results: ${events.length} events, ${clubs.length} clubs`);
+    console.log("Events found:", events);
+    console.log("Clubs found:", clubs);
+    
+    // Make sure the response has the correct structure
+    const response = {
+      events: events || [],
+      clubs: clubs || []
+    };
+    
+    res.json(response);
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ 
+      error: "Error performing search", 
+      details: err.message,
+      success: false,
+      events: [],
+      clubs: []
+    });
   }
 });
 
