@@ -36,9 +36,11 @@ function LoginPage() {
       
       // Match payload to what the server expects
       const payload = {
-        email: email,
+        username: email, // NOTE: Server expects 'username', not 'email'
         password: password
       };
+      
+      console.log("Login payload:", payload);
       
       const response = await axios({
         method: 'post',
@@ -52,11 +54,12 @@ function LoginPage() {
       console.log("Login response:", response.data);
 
       if (response.data.success || response.status === 200) {
+        // Make sure user object has all needed properties including ID
+        const userData = response.data.user || {};
+        console.log("User data to store:", userData);
+        
         // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(response.data.user || {
-          email: email,
-          // Add any other required user info
-        }));
+        localStorage.setItem("user", JSON.stringify(userData));
         
         // Navigate to /home route
         navigate("/home");
