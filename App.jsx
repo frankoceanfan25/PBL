@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import EventCard from './components/EventCard';
 
 function App() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,11 @@ function App() {
       document.head.removeChild(link);
     };
   }, []);
+
+  // Handle See All Clubs click
+  const handleSeeAllClubs = () => {
+    navigate("/clubs");
+  };
 
   if (loading) {
     return (
@@ -120,7 +127,10 @@ function App() {
           <section className="mt-2 px-4 sm:px-6 max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-slate-100 tracking-tight">Popular Clubs</h2>
-              <button className="text-sm text-indigo-300 hover:text-indigo-200 transition-colors flex items-center">
+              <button 
+                onClick={handleSeeAllClubs}
+                className="text-sm text-indigo-300 hover:text-indigo-200 transition-colors flex items-center"
+              >
                 See All
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
@@ -130,12 +140,20 @@ function App() {
             
             <div className="mt-2 overflow-x-auto flex space-x-4 pb-4">
               {clubs.map(club => (
-                <div key={club.id} className="flex flex-col items-center space-y-2 flex-shrink-0 w-20">
+                <div 
+                  key={club.id} 
+                  className="flex flex-col items-center space-y-2 flex-shrink-0 w-20 cursor-pointer"
+                  onClick={() => navigate("/clubs")}
+                >
                   <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-700 bg-slate-800 shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 transform hover:scale-105">
                     <img
                       src={club.logo_url}
                       alt={club.name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/100?text=Club';
+                      }}
                     />
                   </div>
                   <span className="text-xs text-slate-300 text-center w-20 truncate">{club.name}</span>
