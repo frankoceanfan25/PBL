@@ -53,10 +53,17 @@ function LoginPage() {
       
       console.log("Login response:", response.data);
 
-      if (response.data.success || response.status === 200) {
+      // FIX: Check only for success property in response, not the status code
+      if (response.data.success === true) {
         // Make sure user object has all needed properties including ID
         const userData = response.data.user || {};
         console.log("User data to store:", userData);
+        
+        // Check if the user data contains the required fields
+        if (!userData.id) {
+          setError("Invalid user data received");
+          return;
+        }
         
         // Store user data in localStorage
         localStorage.setItem("user", JSON.stringify(userData));
