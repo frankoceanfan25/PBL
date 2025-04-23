@@ -12,6 +12,7 @@ import CalendarPage from "./pages/CalendarPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
 import RegisterPage from './pages/RegisterPage';
+import ClubsPage from './pages/ClubsPage'; // Import the new ClubsPage
 
 // Auth check function
 const AuthCheck = ({ children }) => {
@@ -67,6 +68,14 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <AuthCheck>
             <>
               <ProfilePage />
+              <Navbar />
+            </>
+          </AuthCheck>
+        } />
+        <Route path="/clubs" element={ // Add new route for ClubsPage
+          <AuthCheck>
+            <>
+              <ClubsPage />
               <Navbar />
             </>
           </AuthCheck>
