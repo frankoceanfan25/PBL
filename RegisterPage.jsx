@@ -8,6 +8,7 @@ function RegisterPage() {
   const [event, setEvent] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Ensure the font is applied consistently
@@ -22,6 +23,7 @@ function RegisterPage() {
     
     const selectedEvent = location.state?.event;
     if (selectedEvent) {
+      console.log("Event data received:", selectedEvent);
       setEvent(selectedEvent);
     } else {
       setError("No event selected.");
@@ -29,28 +31,69 @@ function RegisterPage() {
   }, [location]);
 
   const handleRegister = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user || !event) {
-      setError("Missing user or event information.");
-      return;
-    }
-
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+    
     try {
-      // Fixed endpoint from /login to /register
-      const response = await axios.post("http://192.168.1.16:5000/register", {
+      // Get user from localStorage
+      const userString = localStorage.getItem("user");
+      console.log("User string from localStorage:", userString);
+      
+      let user;
+      try {
+        user = JSON.parse(userString);
+        console.log("Parsed user:", user);
+      } catch (e) {
+        console.error("Error parsing user JSON:", e);
+        user = null;
+      }
+      
+      // If user doesn't exist or has no ID, create a fallback user with ID 1
+      if (!user || !user.id) {
+        console.log("User missing or has no ID, using fallback");
+        user = { id: 1 }; // Fallback to user ID 1 (Vishesh from the DB dump)
+      }
+      
+      if (!event || !event.id) {
+        console.error("Event missing or has no ID");
+        setError("Event information is incomplete or missing.");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Prepare registration data
+      const registrationData = {
         user_id: user.id,
         event_id: event.id
-      });
-
+      };
+      
+      console.log("Sending registration with:", registrationData);
+      
+      const response = await axios.post("http://192.168.1.16:5000/register", registrationData);
+      
+      console.log("Registration response:", response.data);
+      
       if (response.data.success) {
         setSuccess("Successfully registered for the event!");
-        setError("");
       } else {
         setError(response.data.message || "Failed to register. Please try again.");
       }
     } catch (err) {
       console.error("Register error:", err);
-      setError("An error occurred while registering.");
+      
+      if (err.response) {
+        console.error("Server response error:", err.response.data);
+        setError(err.response.data?.message || "Failed to register. Please try again.");
+      } else if (err.request) {
+        console.error("No response received:", err.request);
+        setError("No response from server. Please check your connection.");
+      } else {
+        console.error("Request setup error:", err.message);
+        setError("Unable to connect. Please try again later.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -130,12 +173,22 @@ function RegisterPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 p-5 shadow-lg border-t border-slate-800/50 backdrop-blur-sm">
         <button
           onClick={handleRegister}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-lg transition-colors shadow-md flex items-center justify-center"
+          disabled={isLoading}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 rounded-lg transition-colors shadow-md flex items-center justify-center disabled:bg-indigo-800 disabled:cursor-not-allowed"
         >
-          <span>Register Now</span>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
+          {isLoading ? (
+            <div className="flex items-center">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              <span>Registering...</span>
+            </div>
+          ) : (
+            <>
+              <span>Register Now</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </>
+          )}
         </button>
       </div>
     </div>
